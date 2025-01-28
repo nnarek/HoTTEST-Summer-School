@@ -35,10 +35,10 @@ open import sums
 Prove
 ```agda
 uncurry : {A B X : Type} → (A → B → X) → (A × B → X)
-uncurry = {!!}
+uncurry ABX (a , b) = ABX a b
 
 curry : {A B X : Type} → (A × B → X) → (A → B → X)
-curry = {!!}
+curry ABX a b = ABX (a , b)
 ```
 You might know these functions from programming e.g. in Haskell.
 But what do they say under the propositions-as-types interpretation?
@@ -49,38 +49,55 @@ But what do they say under the propositions-as-types interpretation?
 Consider the following goals:
 ```agda
 [i] : {A B C : Type} → (A × B) ∔ C → (A ∔ C) × (B ∔ C)
-[i] = {!!}
+[i] (inl (a , b)) = inl a , inl b
+[i] (inr c) = inr c , inr c
 
 [ii] : {A B C : Type} → (A ∔ B) × C → (A × C) ∔ (B × C)
-[ii] = {!!}
+[ii] (inl a , c) = inl (a , c)
+[ii] (inr b , c) = inr (b , c)
 
 [iii] : {A B : Type} → ¬ (A ∔ B) → ¬ A × ¬ B
-[iii] = {!!}
+[iii] ¬AB = (λ ¬A → ¬AB (inl ¬A)) , (λ ¬B → ¬AB (inr ¬B)) 
 
-[iv] : {A B : Type} → ¬ (A × B) → ¬ A ∔ ¬ B
-[iv] = {!!}
+postulate
+  [iv] : {A B : Type} → ¬ (A × B) → ¬ A ∔ ¬ B
+--[iv] h = {! !}
+--to provide constructive proof we need to determine which constructor of disjunction choose but it is not posible to deduce from ¬ (A × B)
+--also it is possible to prove that this is equivalent to LEM
 
 [v] : {A B : Type} → (A → B) → ¬ B → ¬ A
-[v] = {!!}
+[v] AB ¬B a = ¬B (AB a)
 
-[vi] : {A B : Type} → (¬ A → ¬ B) → B → A
-[vi] = {!!}
+postulate
+  [vi] : {A B : Type} → (¬ A → ¬ B) → B → A
+--[vi] ¬A→¬B b = {! !}
+--we need to construct A which is not possible if there is no function which return A or if we do not know its constructors. only way is to construct 𝟘 type. this is possible if we can get B and ¬B, to get ¬B we need to get ¬A which is imposible in corrent context 
+--we can prove that it is equivalent to LEM
+lem-eqv : ((A B : Type) → (¬ A → ¬ B) → B → A) → ((P : Type) → P ∔ (¬ P))
+lem-eqv h P = h _ 𝟙 (λ lem _ → lem (inr λ p → lem (inl p))) ⋆ 
+--it is trivial to other side of equivalence 
 
-[vii] : {A B : Type} → ((A → B) → A) → A
-[vii] = {!!}
+postulate
+  [vii] : {A B : Type} → ((A → B) → A) → A
+--[vii] ABA = ABA λ a → {!   !} 
+--we can not prove because of almost same reasons as above one
+--we can prove that it is equivalent to LEM
 
 [viii] : {A : Type} {B : A → Type}
     → ¬ (Σ a ꞉ A , B a) → (a : A) → ¬ B a
-[viii] = {!!}
 
-[ix] : {A : Type} {B : A → Type}
+[viii] ¬Σ a Ba = ¬Σ (a , Ba) 
+
+postulate
+  [ix] : {A : Type} {B : A → Type}
     → ¬ ((a : A) → B a) → (Σ a ꞉ A , ¬ B a)
-[ix] = {!!}
+--[ix] ¬∀ = {!   !} , {!   !}
+--to prove sum type we need to provide withness of A which is not possible to construct from negation
 
 [x] : {A B : Type} {C : A → B → Type}
       → ((a : A) → (Σ b ꞉ B , C a b))
       → Σ f ꞉ (A → B) , ((a : A) → C a (f a))
-[x] = {!!}
+[x] aΣCab = (λ a → aΣCab a .pr₁) , λ a → aΣCab a .pr₂ 
 ```
 For each goal determine whether it is provable or not.
 If it is, fill it. If not, explain why it shouldn't be possible.
@@ -100,7 +117,7 @@ In the lecture we have discussed that we can't  prove `∀ {A : Type} → ¬¬ A
 What you can prove however, is
 ```agda
 tne : ∀ {A : Type} → ¬¬¬ A → ¬ A
-tne = {!!}
+tne ¬¬¬A a = ¬¬¬A (λ ¬A → ¬A a)
 ```
 
 
@@ -108,10 +125,10 @@ tne = {!!}
 Prove
 ```agda
 ¬¬-functor : {A B : Type} → (A → B) → ¬¬ A → ¬¬ B
-¬¬-functor = {!!}
+¬¬-functor AB ¬¬A ¬B = ¬¬A (λ a → ¬B (AB a))
 
 ¬¬-kleisli : {A B : Type} → (A → ¬¬ B) → ¬¬ A → ¬¬ B
-¬¬-kleisli = {!!}
+¬¬-kleisli A¬¬B ¬¬A ¬B = ¬¬A λ a → A¬¬B a ¬B
 ```
 Hint: For the second goal use `tne` from the previous exercise
 
@@ -131,7 +148,8 @@ to a true proposition while an uninhabited type corresponds to a false propositi
 With this in mind construct a family
 ```agda
 bool-as-type : Bool → Type
-bool-as-type = {!!}
+bool-as-type true = 𝟘
+bool-as-type false = 𝟙
 ```
 such that `bool-as-type true` corresponds to "true" and
 `bool-as-type false` corresponds to "false". (Hint:
@@ -143,7 +161,8 @@ we have seen canonical types corresponding true and false in the lectures)
 Prove
 ```agda
 bool-≡-char₁ : ∀ (b b' : Bool) → b ≡ b' → (bool-as-type b ⇔ bool-as-type b')
-bool-≡-char₁ = {!!}
+bool-≡-char₁ true true eq = (λ ()) , (λ ())
+bool-≡-char₁ false false eq = id , id
 ```
 
 
@@ -162,7 +181,10 @@ You can actually prove this much easier! How?
 Finish our characterisation of `_≡_` by proving
 ```agda
 bool-≡-char₂ : ∀ (b b' : Bool) → (bool-as-type b ⇔ bool-as-type b') → b ≡ b'
-bool-≡-char₂ = {!!}
+bool-≡-char₂ true true eqv = refl _
+bool-≡-char₂ true false (pr₃ , pr₄ ) = 𝟘-elim (pr₄ ⋆)
+bool-≡-char₂ false true (pr₃ , pr₄) = 𝟘-elim (pr₃ ⋆)
+bool-≡-char₂ false false eqv = refl _
 ```
 
 
@@ -178,5 +200,26 @@ Prove that
 
 ```agda
 decidable-equality-char : (A : Type) → has-decidable-equality A ⇔ has-bool-dec-fct A
-decidable-equality-char = ?
+decidable-equality-char A = (λ hd → equality-dec hd , decidable-equality-char→ hd) ,  
+                            decidable-equality-char← 
+  where 
+    equality-dec : has-decidable-equality A → A → A → Bool
+    equality-dec hd a₁ a₂ with hd a₁ a₂ 
+    ... | inl a₁eqa₂ = true
+    ... | inr a₁neqa₂ = false
+
+    decidable-equality-char→ : (hd : has-decidable-equality A) → (a₁ : A) → (a₂ : A) → a₁ ≡ a₂ ⇔ equality-dec hd a₁ a₂ ≡ true
+    decidable-equality-char→ hd a₁ a₂ with hd a₁ a₂
+    ... | inl a₁≡a₂ = (λ _ → refl _) , λ _ → a₁≡a₂
+    ... | inr a₁≠a₂ = (λ a₁≡a₂ → 𝟘-nondep-elim (a₁≠a₂ a₁≡a₂)) , λ ()
+
+    fneqt : (false ≡ true) → 𝟘
+    fneqt ()
+
+    decidable-equality-char← : has-bool-dec-fct A → has-decidable-equality A
+    decidable-equality-char← (hb , pr₄) a₁ a₂ with hb a₁ a₂ | pr₄ a₁ a₂ 
+    ... | true | pr₃ , pr₅ = inl (pr₅ (refl true))
+    ... | false | pr₃ , pr₅ = inr (λ{ a₁≡a₂ → fneqt (pr₃ a₁≡a₂) })
+
 ```
+  
